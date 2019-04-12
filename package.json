@@ -1,0 +1,12 @@
+{
+  "name": "lq-utils",
+  "version": "1.0.0",
+  "description": "my utils",
+  "git repository": "https://github.com/lq0910/lq-utils.git",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "lq6188",
+  "license": "MIT"
+}
