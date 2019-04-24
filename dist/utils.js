@@ -168,8 +168,8 @@ var DateUtils = (function () {
         var mm = date.getMonth() + 1;
         var dd = date.getDate();
         return [date.getFullYear(), "-",
-        (mm > 9 ? '' : '0') + mm, "-",
-        (dd > 9 ? '' : '0') + dd
+            (mm > 9 ? '' : '0') + mm, "-",
+            (dd > 9 ? '' : '0') + dd
         ].join('');
     };
     DateUtils.addDays = function (date, days) {
@@ -214,9 +214,10 @@ var Utils = (function () {
             });
         }
     };
-    Utils.triger_change = function (el) {
-        $(el).on('change', function (event) {
+    Utils.triger_change = function (el, change) {
+        document.querySelector(el).addEventListener('change', function (event) {
             var changeEvent;
+            console.log("change date...");
             if (event.originalEvent) {
                 return;
             }
@@ -237,6 +238,8 @@ var Utils = (function () {
                 });
             }
             event.target.dispatchEvent(changeEvent);
+            console.log('changeEvent......');
+            change();
         });
     };
     Utils.upDigit = function (n) {
@@ -343,44 +346,141 @@ var Utils = (function () {
     Utils.isArray = function (o) {
         return Object.prototype.toString.call(o) === '[object Array]';
     };
-    Utils.init_drop = function () {
-        $('.dropdown-button').dropdown({
-            inDuration: 300,
-            outDuration: 225,
-            constrainWidth: false,
-            hover: false,
-            gutter: 0,
-            belowOrigin: true,
-            alignment: 'left',
-            stopPropagation: false
+    Utils.formatPassTime = function (startTime) {
+        var currentTime = Date.parse(new Date().toString()), time = currentTime - startTime, day = parseInt(time / (1000 * 60 * 60 * 24) + ''), hour = parseInt(time / (1000 * 60 * 60) + ''), min = parseInt(time / (1000 * 60) + ''), month = parseInt(day / 30 + ''), year = parseInt(month / 12 + '');
+        if (year)
+            return year + "年前";
+        if (month)
+            return month + "个月前";
+        if (day)
+            return day + "天前";
+        if (hour)
+            return hour + "小时前";
+        if (min)
+            return min + "分钟前";
+        else
+            return '刚刚';
+    };
+    Utils.prototype.collapsible = function (n) {
+        var eleMore = document.getElementById(n);
+        if (eleMore.style.display == "none") {
+            eleMore.style.display = 'block';
+        }
+        else {
+            eleMore.style.display = 'none';
+        }
+        return;
+    };
+    Utils.prototype.resizeImage = function (settings) {
+        var file = settings.file;
+        var maxSize = settings.maxSize;
+        var reader = new FileReader();
+        var image = new Image();
+        var canvas = document.createElement('canvas');
+        var dataURItoBlob = function (dataURI) {
+            var bytes = dataURI.split(',')[0].indexOf('base64') >= 0 ?
+                atob(dataURI.split(',')[1]) :
+                unescape(dataURI.split(',')[1]);
+            var mime = dataURI.split(',')[0].split(':')[1].split(';')[0];
+            var max = bytes.length;
+            var ia = new Uint8Array(max);
+            for (var i = 0; i < max; i++)
+                ia[i] = bytes.charCodeAt(i);
+            return new Blob([ia], { type: mime });
+        };
+        var resize = function () {
+            var width = image.width;
+            var height = image.height;
+            if (width > height) {
+                if (width > maxSize) {
+                    height *= maxSize / width;
+                    width = maxSize;
+                }
+            }
+            else {
+                if (height > maxSize) {
+                    width *= maxSize / height;
+                    height = maxSize;
+                }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+            var dataUrl = canvas.toDataURL('image/jpeg');
+            return dataURItoBlob(dataUrl);
+        };
+        return new Promise(function (ok, no) {
+            if (!file.type.match(/image.*/)) {
+                no(new Error("Not an image"));
+                return;
+            }
+            reader.onload = function (readerEvent) {
+                image.onload = function () { return ok(resize()); };
+                image.src = readerEvent.target.result;
+            };
+            reader.readAsDataURL(file);
         });
     };
-    Utils.init_input = function () {
-        var input_selector = 'input[type=text], input[type=password], input[type=email], input[type=url], input[type=tel], input[type=number], input[type=search], textarea';
-        setTimeout(function () {
-            $(input_selector).each(function (index, element) {
-                if ($(element).val().length > 0 || element.autofocus || $(this).attr('placeholder') !== undefined || $(element)[0].validity.badInput === true) {
-                    $(this).siblings('label').addClass('active');
+    Utils.checkIdcard = function (code) {
+        var city = { 11: "北京", 12: "天津", 13: "河北", 14: "山西", 15: "内蒙古", 21: "辽宁", 22: "吉林", 23: "黑龙江 ", 31: "上海", 32: "江苏", 33: "浙江", 34: "安徽", 35: "福建", 36: "江西", 37: "山东", 41: "河南", 42: "湖北 ", 43: "湖南", 44: "广东", 45: "广西", 46: "海南", 50: "重庆", 51: "四川", 52: "贵州", 53: "云南", 54: "西藏 ", 61: "陕西", 62: "甘肃", 63: "青海", 64: "宁夏", 65: "新疆", 71: "台湾", 81: "香港", 82: "澳门", 91: "国外 " };
+        var tip = "";
+        var pass = true;
+        if (!code || !/^\d{6}(18|19|20)?\d{2}(0[1-9]|1[012])(0[1-9]|[12]\d|3[01])\d{3}(\d|X)$/i.test(code)) {
+            tip = "身份证号格式错误";
+            pass = false;
+        }
+        else if (!city[code.substr(0, 2)]) {
+            tip = "身份证号有误";
+            pass = false;
+        }
+        else {
+            if (code.length == 18) {
+                code = code.split('');
+                var factor = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+                var parity = [1, 0, 'X', 9, 8, 7, 6, 5, 4, 3, 2];
+                var sum = 0;
+                var ai = 0;
+                var wi = 0;
+                for (var i = 0; i < 17; i++) {
+                    ai = code[i];
+                    wi = factor[i];
+                    sum += ai * wi;
                 }
-                else {
-                    $(this).siblings('label').removeClass('active');
+                parity[sum % 11];
+                if (parity[sum % 11] != code[17]) {
+                    tip = "身份证号有误";
+                    pass = false;
                 }
-            });
-        }, 100);
+            }
+        }
+        if (!pass)
+            alert(tip);
+        return pass;
     };
-    Utils.init_datepicker = function () {
-        $('.datepicker').pickadate({
-            selectMonths: false,
-            selectYears: 15,
-            format: 'yyyy/mm/dd',
-            weekdaysLetter: ['日', '一', '二', '三', '四', '五', '六'],
-            today: '今天',
-            clear: '清除',
-            close: '关闭',
-            monthsFull: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
-            monthsShort: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-            weekdaysFull: ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-        });
+    Utils.prototype.formatDate = function (val, pattern) {
+        var value = val.toString();
+        var date = value.indexOf('-') >= 0 ? Date.parse(value) : value.length == 10 ? value * 1000 : value;
+        date = new Date(parseInt(date));
+        var YY = date.getFullYear();
+        var y = YY.toString().substr(2);
+        var m = date.getMonth() + 1;
+        var MM = m < 10 ? '0' + m : m;
+        var d = date.getDate();
+        var DD = d < 10 ? '0' + d : d;
+        var h = date.getHours();
+        var HH = h < 10 ? '0' + h : h;
+        var i = date.getMinutes();
+        var II = i < 10 ? '0' + i : i;
+        var s = date.getSeconds();
+        var SS = s < 10 ? '0' + s : s;
+        var newdate;
+        newdate = pattern.replace(/yy/g, YY).replace(/y/g, y);
+        newdate = newdate.replace(/mm/g, MM).replace(/m/g, m);
+        newdate = newdate.replace(/dd/g, DD).replace(/d/g, d);
+        newdate = newdate.replace(/hh/g, HH).replace(/h/g, h);
+        newdate = newdate.replace(/ii/g, II).replace(/i/g, i);
+        newdate = newdate.replace(/ss/g, SS).replace(/s/g, s);
+        return newdate;
     };
     Utils._cache = new Map();
     return Utils;
