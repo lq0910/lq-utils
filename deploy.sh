@@ -7,7 +7,7 @@ set -e
 gulp pub
 
 #登录npm
-npm adduser
+npm login
 
 #发布
 npm publish
