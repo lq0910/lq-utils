@@ -482,6 +482,21 @@ var Utils = (function () {
         newdate = newdate.replace(/ss/g, SS).replace(/s/g, s);
         return newdate;
     };
+    Utils.countDown = function (end_) {
+        var MSG = '已过期';
+        var start = new Date();
+        var end = new Date(end_);
+        var result = parseInt((end.getTime() - start.getTime()) / 1000 + '');
+        var d = parseInt(result / (24 * 60 * 60) + '');
+        var h = parseInt(result / (60 * 60) % 24 + '');
+        var m = parseInt(result / 60 % 60 + '');
+        var s = parseInt(result % 60 + '');
+        setTimeout(this.countDown, 500);
+        if (result <= 0) {
+            return MSG;
+        }
+        return d + '天' + h + '时' + m + '分' + s + '秒';
+    };
     Utils._cache = new Map();
     return Utils;
 }());
